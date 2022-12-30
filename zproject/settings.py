@@ -11,7 +11,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
-
+import os
+import dj_database_url
 
 from datetime import timedelta
 
@@ -19,7 +20,7 @@ from datetime import timedelta
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-		'AUTH_HEADER_TYPES': ('Bearer',)
+    'AUTH_HEADER_TYPES': ('Bearer',)
 }
 
 
@@ -31,13 +32,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-22zse49f)shkl0i=6r0%%n2$_f*3qzby_n*g%@&0w(9y0lgq6p'
+SECRET_KEY = os.environ.get('SECRET_KEY', default='my_secret_key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = 'RENDER' not in os.environ
+
 
 ALLOWED_HOSTS = []
 
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Application definition
 
@@ -63,6 +69,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -96,10 +103,10 @@ WSGI_APPLICATION = 'zproject.wsgi.application'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3',
+        conn_max_age=600
+    )
 }
 
 
@@ -138,6 +145,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = 'static/'
+if not DEBUG:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
@@ -145,23 +156,22 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES":[ "rest_framework_simplejwt.authentication.JWTAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
 
-    "DEFAULT_FILTER_BACKENDS" : ['django_filters.rest_framework.DjangoFilterBackend'],
-    "DEFAULT_THROTTLE_CLASSES":[
-        "rest_framework.throttling.AnonRateThrottle", #anonimos
-        "rest_framework.throttling.UserRateThrottle", #logueados
-		'rest_framework.throttling.ScopedRateThrottle' #throtle_rates
+    "DEFAULT_FILTER_BACKENDS": ['django_filters.rest_framework.DjangoFilterBackend'],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",  # anonimos
+        "rest_framework.throttling.UserRateThrottle",  # logueados
+        'rest_framework.throttling.ScopedRateThrottle'  # throtle_rates
     ],
-    "DEFAULT_THROTTLE_RATES":{
-        "anon":"100000/day",
-        "user":"10000/minute",
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100000/day",
+        "user": "10000/minute",
 
-		"payments":"10000/hour",
-		"all":"1000000/second"
-}
+                "payments": "10000/hour",
+                "all": "1000000/second"
+    }
 }
 
 
