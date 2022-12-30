@@ -18,6 +18,7 @@ from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 
 
 class Rest_Payments(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Payments.objects.all()
     serializer_class = PaymentsSerializer
 
@@ -70,6 +71,7 @@ class Rest_Payments(viewsets.ModelViewSet):
 
 
 class Rest_Payments_expired(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Payments_expired.objects.all()
     serializer_class = Payments_expiredSerializer
     # pagination_class = Pagination_own
